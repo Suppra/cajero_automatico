@@ -4,26 +4,28 @@ import 'package:provider/provider.dart';
 import 'controllers/retiro_controller.dart';
 import 'views/home_screen.dart';
 import 'firebase_options.dart';
+import 'services/firebase_service.dart';
 
 /// Aplicación principal del Cajero Automático
 /// Universidad Popular del César - Proyecto Académico
-/// 
+///
 /// Este proyecto implementa un sistema completo de cajero automático
 /// con tres tipos de retiros diferentes siguiendo la metodología del acarreo
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Inicializar Firebase con configuración específica
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     print('Firebase inicializado correctamente');
+    // Inicializar estructura base en Firestore
+    await Future.delayed(const Duration(milliseconds: 500)); // Espera breve por seguridad
+    await FirebaseService.inicializarEstructuraBase();
   } catch (e) {
     print('Error al inicializar Firebase: $e');
     // La app puede funcionar sin Firebase para el demo académico
   }
-  
+
   runApp(const CajeroAutomaticoApp());
 }
 
@@ -35,14 +37,12 @@ class CajeroAutomaticoApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         // Proveedor del controlador principal de retiros
-        ChangeNotifierProvider(
-          create: (context) => RetiroController()..inicializar(),
-        ),
+        ChangeNotifierProvider(create: (context) => RetiroController()..inicializar()),
       ],
       child: MaterialApp(
         title: 'Cajero Automático UPC',
         debugShowCheckedModeBanner: false,
-        
+
         // Tema de la aplicación
         theme: ThemeData(
           primarySwatch: Colors.blue,
@@ -51,7 +51,7 @@ class CajeroAutomaticoApp extends StatelessWidget {
             brightness: Brightness.light,
           ),
           useMaterial3: true,
-          
+
           // Configuraciones adicionales del tema
           appBarTheme: AppBarTheme(
             elevation: 0,
@@ -62,35 +62,26 @@ class CajeroAutomaticoApp extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          
+
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
               elevation: 2,
               padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
           ),
-          
+
           inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
-          
+
           cardTheme: CardThemeData(
             elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           ),
         ),
-        
+
         // Pantalla inicial
         home: const SplashScreen(),
       ),
@@ -106,38 +97,31 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Configurar animaciones
-    _animationController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
-    
+    _animationController = AnimationController(duration: const Duration(seconds: 2), vsync: this);
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeInOut));
+
     // Iniciar animación
     _animationController.forward();
-    
+
     // Navegar a la pantalla principal después de 3 segundos
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        Navigator.of(
+          context,
+        ).pushReplacement(MaterialPageRoute(builder: (context) => const HomeScreen()));
       }
     });
   }
@@ -165,22 +149,14 @@ class _SplashScreenState extends State<SplashScreen>
                   color: Colors.white,
                   shape: BoxShape.circle,
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
+                    BoxShadow(color: Colors.black26, blurRadius: 20, offset: const Offset(0, 10)),
                   ],
                 ),
-                child: Icon(
-                  Icons.account_balance,
-                  size: 80,
-                  color: Colors.blue[900],
-                ),
+                child: Icon(Icons.account_balance, size: 80, color: Colors.blue[900]),
               ),
-              
+
               const SizedBox(height: 40),
-              
+
               // Título
               Text(
                 'CAJERO AUTOMÁTICO',
@@ -191,39 +167,29 @@ class _SplashScreenState extends State<SplashScreen>
                   letterSpacing: 2,
                 ),
               ),
-              
+
               const SizedBox(height: 15),
-              
+
               // Subtítulo
               Text(
                 'Universidad Popular del César',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w300,
-                ),
+                style: TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w300),
               ),
-              
+
               const SizedBox(height: 50),
-              
+
               // Indicador de carga
               CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 strokeWidth: 3,
               ),
-              
+
               const SizedBox(height: 20),
-              
-              Text(
-                'Iniciando sistema...',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-              ),
-              
+
+              Text('Iniciando sistema...', style: TextStyle(color: Colors.white70, fontSize: 16)),
+
               const SizedBox(height: 80),
-              
+
               // Información del proyecto
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -240,19 +206,13 @@ class _SplashScreenState extends State<SplashScreen>
                     const SizedBox(height: 5),
                     Text(
                       'Sistemas de Información Empresarial',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 5),
                     Text(
                       'Metodología del Acarreo para Cálculo de Billetes',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                   ],

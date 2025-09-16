@@ -208,6 +208,19 @@ class RetiroController extends ChangeNotifier {
       // Guardar en Firebase
       await Future.wait([
         FirebaseService.guardarTransaccion(transaccion),
+        FirebaseService.guardarRetiro(
+          Retiro(
+            id: transaccion.id,
+            tipo: transaccion.tipoRetiro,
+            numeroIdentificacion: transaccion.numeroIdentificacion,
+            monto: transaccion.monto,
+            clave: _clave,
+            fechaHora: transaccion.fechaHora,
+            billetes: transaccion.billetesEntregados,
+            exitoso: transaccion.exitosa,
+            mensajeError: transaccion.mensajeError,
+          ),
+        ),
         FirebaseService.guardarEstadoCajero(_cajero),
       ]);
 

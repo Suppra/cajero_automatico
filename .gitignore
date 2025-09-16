@@ -39,6 +39,14 @@ app.*.symbols
 # Obfuscation related
 app.*.map.json
 
+# Archivos sensibles y documentación local
+CONFIGURACION_FIREBASE.md
+CORRECCIONES_AHORRO_MANO.md
+ESTADO_FIREBASE_ACTUAL.md
+FIREBASE_LLAVES_REALES.md
+INSTRUCCIONES_ANDROID.md
+NOTAS_DESARROLLO.md
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile

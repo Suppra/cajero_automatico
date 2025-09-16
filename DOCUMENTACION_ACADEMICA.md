@@ -546,38 +546,28 @@ Widget _buildBilletesDisplay(Map<int, int> billetes) {
 
 ## SERVICIOS
 
-### Firebase Service (`firebase_service.dart`)
+### Servicio de Firebase (`lib/services/firebase_service.dart`)
 
+Encapsula la lógica de autenticación, almacenamiento y consulta en Firestore:
+
+- Autenticación anónima
+- Guardado de transacciones (incluye reporte detallado)
+- Guardado de retiros (incluye billetes entregados y datos relevantes)
+- Guardado del estado del cajero
+- Consulta de transacciones recientes y estadísticas
+
+**Ejemplo de uso:**
 ```dart
-class FirebaseService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+// Guardar transacción con reporte detallado
+await FirebaseService.guardarTransaccion(transaccion);
 
-  /// Guarda una transacción en Firestore
-  Future<void> guardarTransaccion(Transaccion transaccion) async {
-    try {
-      await _firestore
-          .collection('transacciones')
-          .doc(transaccion.id)
-          .set(transaccion.toMap());
+// Guardar retiro con billetes entregados
+await FirebaseService.guardarRetiro(retiro);
+```
 
-      print('Transacción guardada exitosamente: ${transaccion.id}');
-    } catch (e) {
-      print('Error al guardar transacción: $e');
-      throw Exception('No se pudo guardar la transacción');
-    }
-  }
-
-  /// Obtiene estadísticas de transacciones
-  Future<Map<String, dynamic>> obtenerEstadisticas() async {
-    try {
-      QuerySnapshot snapshot = await _firestore
-          .collection('transacciones')
-          .where('exitosa', isEqualTo: true)
-          .get();
-
-      int totalTransacciones = snapshot.docs.length;
-      int montoTotal = snapshot.docs
-          .map((doc) => doc['monto'] as int)
+**Estructura en Firestore:**
+- Colección `transacciones`: cada documento incluye todos los datos de la transacción y el campo `reporteDetallado`.
+- Colección `retiros`: cada documento incluye los billetes entregados, tipo de retiro, monto, fecha y demás datos relevantes.
           .fold(0, (a, b) => a + b);
 
       return {
