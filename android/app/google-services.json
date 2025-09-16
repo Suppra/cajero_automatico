@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "74209132582",
+    "project_id": "cajero-automatico-upc",
+    "storage_bucket": "cajero-automatico-upc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:74209132582:android:699d65550a7e495d88a6e7",
+        "android_client_info": {
+          "package_name": "com.universidadpopular.cajero_automatico"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZCzrlvYWr6rD1hGt9_e87R437YqyZEh0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

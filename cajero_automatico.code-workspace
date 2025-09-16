@@ -1,0 +1,61 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "dart.projectSearchDepth": 5,
+    "dart.flutterSdkPath": null,
+    "dart.sdkPath": null,
+    "files.exclude": {
+      "**/.git": true,
+      "**/.svn": true,
+      "**/.hg": true,
+      "**/CVS": true,
+      "**/.DS_Store": true,
+      "**/Thumbs.db": true,
+      "**/.dart_tool": true,
+      "**/build": false
+    },
+    "search.exclude": {
+      "**/build": true,
+      "**/.dart_tool": true,
+      "**/.git": true,
+      "**/node_modules": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "dart-code.dart-code",
+      "dart-code.flutter",
+      "ms-vscode.vscode-json"
+    ]
+  },
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "cajero_automatico",
+        "type": "dart",
+        "request": "launch",
+        "program": "lib/main.dart",
+        "args": [
+          "--flavor",
+          "development",
+          "--target",
+          "lib/main.dart"
+        ],
+        "cwd": "${workspaceFolder}",
+        "flutterMode": "debug"
+      },
+      {
+        "name": "cajero_automatico (release mode)",
+        "type": "dart",
+        "request": "launch",
+        "program": "lib/main.dart",
+        "flutterMode": "release"
+      }
+    ]
+  }
+}

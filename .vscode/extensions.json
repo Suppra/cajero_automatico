@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "dart-code.dart-code",
+    "dart-code.flutter",
+    "ms-vscode.vscode-json",
+    "bradlc.vscode-tailwindcss",
+    "usernamehw.errorlens",
+    "ms-vscode.bracket-pair-colorizer-2",
+    "ms-vscode.material-icon-theme"
+  ]
+}
