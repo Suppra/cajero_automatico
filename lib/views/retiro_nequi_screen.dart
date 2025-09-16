@@ -18,6 +18,8 @@ class RetiroNequiScreen extends StatefulWidget {
 class _RetiroNequiScreenState extends State<RetiroNequiScreen> {
   final _celularController = TextEditingController();
   final _montoController = TextEditingController();
+  // Se usará en el dialog
+  final TextEditingController _claveTemporalDialogController = TextEditingController();
 
   String _claveGenerada = '';
   bool _claveVisible = false;
@@ -274,15 +276,40 @@ class _RetiroNequiScreenState extends State<RetiroNequiScreen> {
                   style: TextStyle(color: Colors.grey[600], fontSize: 14),
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  _claveGenerada,
-                  style: TextStyle(
-                    color: Colors.purple[800],
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 8,
-                    fontFamily: 'monospace',
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _claveGenerada,
+                      style: TextStyle(
+                        color: Colors.purple[800],
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 8,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: _claveGenerada));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Clave copiada al portapapeles'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.purple[50],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.copy, color: Colors.purple, size: 28),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -445,11 +472,134 @@ class _RetiroNequiScreenState extends State<RetiroNequiScreen> {
 
   /// Procesa el retiro
   Future<void> _procesarRetiro(RetiroController controller) async {
-    final exito = await controller.procesarRetiro();
+    _claveTemporalDialogController.clear();
+    final claveCorrecta = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.purple[50],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock, color: Colors.purple[700], size: 48),
+                const SizedBox(height: 12),
+                Text(
+                  'Ingrese la clave temporal',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple[800],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Por seguridad, digite la clave que aparece en pantalla para continuar con el retiro.',
+                  style: TextStyle(fontSize: 14, color: Colors.purple[600]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _claveTemporalDialogController,
+                        keyboardType: TextInputType.number,
+                        maxLength: 6,
+                        decoration: InputDecoration(
+                          hintText: 'Clave temporal',
+                          prefixIcon: Icon(Icons.lock, color: Colors.purple[600]),
+                          counterText: '',
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.purple[600]!, width: 2),
+                          ),
+                        ),
+                        autofocus: true,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () async {
+                        final clipboardData = await Clipboard.getData('text/plain');
+                        if (clipboardData?.text != null && clipboardData!.text!.isNotEmpty) {
+                          _claveTemporalDialogController.text = clipboardData.text!;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Clave pegada desde el portapapeles'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('No hay clave en el portapapeles'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.purple[100],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.paste, color: Colors.purple, size: 28),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Cancelar'),
+                    ),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple[600],
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      icon: const Icon(Icons.check),
+                      label: const Text('Confirmar'),
+                      onPressed: () {
+                        if (_claveTemporalDialogController.text == _claveGenerada) {
+                          Navigator.of(context).pop(true);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('La clave temporal ingresada es incorrecta.'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
 
-    if (exito) {
-      // Navegar a pantalla de resultado
-      if (mounted) {
+    if (claveCorrecta == true) {
+      final exito = await controller.procesarRetiro();
+      if (exito && mounted) {
         Navigator.of(
           context,
         ).pushReplacement(MaterialPageRoute(builder: (context) => const ResultadoRetiroScreen()));

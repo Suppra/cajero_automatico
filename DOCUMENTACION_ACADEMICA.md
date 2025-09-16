@@ -1,4 +1,23 @@
 # CAJERO AUTOMÁTICO - DOCUMENTACIÓN ACADÉMICA
+---
+
+## CAMBIOS RECIENTES (Septiembre 2025)
+
+### Mejoras en Retiro NEQUI y Seguridad
+
+- Ahora, al realizar un retiro NEQUI, la clave temporal generada se muestra en pantalla con un botón para copiar fácilmente al portapapeles.
+- Al presionar "Procesar Retiro", se abre un diálogo donde el usuario debe ingresar la clave temporal para validar la operación.
+- El diálogo incluye un botón para pegar la clave desde el portapapeles, facilitando el flujo y evitando errores de digitación.
+- Se mejoró la experiencia visual del diálogo y la card de clave temporal, mostrando mensajes de confirmación al copiar/pegar.
+- Se eliminó el campo de clave temporal del formulario principal, ahora la validación es interactiva y más segura.
+
+#### Ejemplo de flujo actualizado:
+1. El usuario genera la clave temporal y la copia usando el icono en la card.
+2. Al procesar el retiro, aparece un diálogo para ingresar la clave.
+3. Puede pegar la clave copiada usando el botón de "pegar".
+4. Si la clave es correcta, el retiro se procesa; si no, se muestra un mensaje de error.
+
+Esto mejora la seguridad y la usabilidad del sistema, alineándose con buenas prácticas de UX y validación bancaria.
 **Universidad Popular del César**
 **Sistemas de Información Empresarial**
 **Proyecto Académico**
