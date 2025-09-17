@@ -155,54 +155,62 @@ Desarrollar un sistema de cajero automático funcional que demuestre la aplicaci
 ## METODOLOGÍA DEL ACARREO
 
 ### Concepto Teórico
-La **metodología del acarreo** es un algoritmo optimizado para **calcular la menor cantidad de billetes** necesarios para entregar un monto específico.
+La **metodología del acarreo** es un algoritmo optimizado para **calcular la combinación de billetes** que entrega el monto solicitado, priorizando el uso de billetes pequeños cuando existen varias combinaciones posibles.
 
 ### Principio Matemático
 ```
-Algoritmo Greedy (Codicioso):
-1. Ordenar denominaciones de mayor a menor
-2. Para cada denominación:
-   - Calcular cuántos billetes de esa denominación caben
-   - Restar el valor calculado del monto restante
-   - Continuar con la siguiente denominación
+Algoritmo de acarreo modificado:
+1. Generar todas las combinaciones posibles de billetes para el monto solicitado.
+2. Seleccionar la combinación que utilice la menor cantidad de billetes grandes (priorizando billetes pequeños).
+3. Si hay varias combinaciones equivalentes, se escoge la que maximiza el uso de billetes pequeños.
 ```
 
 ### Implementación en Código
 ```dart
 class CalculadorBilletes {
-  static const List<int> DENOMINACIONES = [100000, 50000, 20000, 10000, 5000];
-
-  static Map<int, int> calcular(int monto) {
-    Map<int, int> resultado = {};
-    int montoRestante = monto;
-
-    for (int denominacion in DENOMINACIONES) {
-      if (montoRestante >= denominacion) {
-        int cantidad = montoRestante ~/ denominacion;
-        resultado[denominacion] = cantidad;
-        montoRestante -= (cantidad * denominacion);
+  /// Calcula los billetes necesarios para un monto usando el algoritmo del acarreo modificado
+  static Map<int, int> calcularBilletes(int monto) {
+    if (monto <= 0) return {};
+    Map<int, int>? mejorCombinacion;
+    int menorCantidadBilletesGrandes = double.maxFinite.toInt();
+    // Generar todas las combinaciones posibles de billetes
+    for (int cant100k = 0; cant100k <= monto ~/ 100000; cant100k++) {
+      for (int cant50k = 0; cant50k <= monto ~/ 50000; cant50k++) {
+        for (int cant20k = 0; cant20k <= monto ~/ 20000; cant20k++) {
+          int montoRestante = monto - (cant100k * 100000 + cant50k * 50000 + cant20k * 20000);
+          if (montoRestante < 0) continue;
+          if (montoRestante % 10000 != 0) continue;
+          int cant10k = montoRestante ~/ 10000;
+          int totalBilletesGrandes = cant100k + cant50k + cant20k;
+          // Preferir la combinación con menos billetes grandes (más pequeños)
+          if (cant100k * 100000 + cant50k * 50000 + cant20k * 20000 + cant10k * 10000 == monto) {
+            if (totalBilletesGrandes < menorCantidadBilletesGrandes) {
+              menorCantidadBilletesGrandes = totalBilletesGrandes;
+              mejorCombinacion = {
+                if (cant100k > 0) 100000: cant100k,
+                if (cant50k > 0) 50000: cant50k,
+                if (cant20k > 0) 20000: cant20k,
+                if (cant10k > 0) 10000: cant10k,
+              };
+            }
+          }
+        }
       }
     }
-
-    return resultado;
+    return mejorCombinacion ?? {};
   }
 }
 ```
 
 ### Ejemplo Práctico
-**Monto a retirar: $170,000**
+**Monto a retirar: $40,000**
 
 ```
-1. $100,000 → 170,000 ÷ 100,000 = 1 billete
-  Restante: 170,000 - 100,000 = $70,000
+Combinaciones posibles:
+1. 2×$20,000 = $40,000 (2 billetes grandes)
+2. 1×$20,000 + 2×$10,000 = $40,000 (1 billete grande, 2 pequeños)
 
-2. $50,000 → 70,000 ÷ 50,000 = 1 billete
-  Restante: 70,000 - 50,000 = $20,000
-
-3. $20,000 → 20,000 ÷ 20,000 = 1 billete
-  Restante: 20,000 - 20,000 = $0
-
-Resultado: 1×$100,000 + 1×$50,000 + 1×$20,000 = 3 billetes total
+El sistema selecciona la segunda opción: 1×$20,000 + 2×$10,000
 ```
 
 ### Nueva Regla de Validación de Montos

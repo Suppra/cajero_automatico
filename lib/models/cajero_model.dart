@@ -15,11 +15,11 @@ class CajeroAutomatico {
     required this.inventarioBilletes,
     this.activo = true,
     this.limiteRetiroMaximo = 2000000, // $2,000,000
-    this.limiteRetiroMinimo = 10000,   // $10,000
+    this.limiteRetiroMinimo = 10000, // $10,000
     this.transaccionesRecientes = const [],
   });
 
-  /// Denominaciones de billetes permitidas (sin billetes de $5,000)
+  /// Denominaciones de billetes permitidas
   static const List<int> denominacionesPermitidas = [10000, 20000, 50000, 100000];
 
   /// Factory para crear un cajero con inventario inicial
@@ -31,10 +31,10 @@ class CajeroAutomatico {
       id: id,
       ubicacion: ubicacion,
       inventarioBilletes: {
-        10000: 100,   // 100 billetes de $10,000
-        20000: 80,    // 80 billetes de $20,000
-        50000: 50,    // 50 billetes de $50,000
-        100000: 30,   // 30 billetes de $100,000
+        10000: 100, // 100 billetes de $10,000
+        20000: 80, // 80 billetes de $20,000
+        50000: 50, // 50 billetes de $50,000
+        100000: 30, // 30 billetes de $100,000
       },
     );
   }
@@ -66,7 +66,7 @@ class CajeroAutomatico {
 
     // Calcular billetes necesarios usando metodología del acarreo
     final billetesCalculados = CalculadorBilletes.calcularBilletes(monto.toInt());
-    
+
     if (billetesCalculados.isEmpty) {
       return ResultadoVerificacion(
         posible: false,
@@ -100,7 +100,7 @@ class CajeroAutomatico {
   /// Simula la entrega de billetes y actualiza el inventario
   CajeroAutomatico entregarBilletes(Map<int, int> billetesEntregados) {
     final nuevoInventario = Map<int, int>.from(inventarioBilletes);
-    
+
     billetesEntregados.forEach((denominacion, cantidad) {
       nuevoInventario[denominacion] = (nuevoInventario[denominacion] ?? 0) - cantidad;
     });
@@ -119,23 +119,23 @@ class CajeroAutomatico {
   /// Calcula cuántos retiros adicionales son posibles con el inventario actual
   int calcularRetirosRestantes(double monto) {
     if (!verificarRetiro(monto).posible) return 0;
-    
+
     final billetesNecesarios = CalculadorBilletes.calcularBilletes(monto.toInt());
     if (billetesNecesarios.isEmpty) return 0;
-    
+
     int retirosMinimos = double.maxFinite.toInt();
-    
+
     for (final entry in billetesNecesarios.entries) {
       final denominacion = entry.key;
       final cantidadPorRetiro = entry.value;
       final cantidadDisponible = inventarioBilletes[denominacion] ?? 0;
-      
+
       final retirosConEsteDenominacion = cantidadDisponible ~/ cantidadPorRetiro;
-      retirosMinimos = retirosMinimos < retirosConEsteDenominacion 
-          ? retirosMinimos 
+      retirosMinimos = retirosMinimos < retirosConEsteDenominacion
+          ? retirosMinimos
           : retirosConEsteDenominacion;
     }
-    
+
     return retirosMinimos == double.maxFinite.toInt() ? 0 : retirosMinimos;
   }
 
@@ -149,28 +149,29 @@ class CajeroAutomatico {
   /// Genera reporte del estado del cajero
   String generarReporteEstado() {
     final buffer = StringBuffer();
-    
+
     buffer.writeln('=== ESTADO DEL CAJERO AUTOMÁTICO ===');
     buffer.writeln('ID: $id');
     buffer.writeln('Ubicación: $ubicacion');
     buffer.writeln('Estado: ${activo ? "ACTIVO" : "INACTIVO"}');
     buffer.writeln('Total disponible: \$${_formatearMonto(totalDisponible)}');
     buffer.writeln('\n=== INVENTARIO DE BILLETES ===');
-    
+
     for (final denominacion in denominacionesPermitidas.reversed) {
       final cantidad = inventarioBilletes[denominacion] ?? 0;
       final valor = denominacion * cantidad;
-      buffer.writeln('\$${_formatearMonto(denominacion.toDouble())}: $cantidad billetes = \$${_formatearMonto(valor.toDouble())}');
+      buffer.writeln(
+        '\$${_formatearMonto(denominacion.toDouble())}: $cantidad billetes = \$${_formatearMonto(valor.toDouble())}',
+      );
     }
-    
+
     return buffer.toString();
   }
 
   String _formatearMonto(double monto) {
-    return monto.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match match) => '${match[1]},',
-    );
+    return monto
+        .toStringAsFixed(0)
+        .replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match match) => '${match[1]},');
   }
 
   /// Convierte a Map para almacenamiento
@@ -220,26 +221,35 @@ class CalculadorBilletes {
   /// Calcula los billetes necesarios para un monto usando el algoritmo del acarreo
   static Map<int, int> calcularBilletes(int monto) {
     if (monto <= 0) return {};
-    
-    const denominaciones = [100000, 50000, 20000, 10000]; // Orden descendente
-    final billetes = <int, int>{};
-    int montoRestante = monto;
-    
-    // Aplicar metodología del acarreo
-    for (final denominacion in denominaciones) {
-      if (montoRestante >= denominacion) {
-        final cantidad = montoRestante ~/ denominacion;
-        billetes[denominacion] = cantidad;
-        montoRestante -= (denominacion * cantidad);
+    // const denominaciones = [100000, 50000, 20000, 10000]; // No se usa
+    Map<int, int>? mejorCombinacion;
+    int menorCantidadBilletesGrandes = double.maxFinite.toInt();
+
+    // Generar todas las combinaciones posibles de billetes
+    for (int cant100k = 0; cant100k <= monto ~/ 100000; cant100k++) {
+      for (int cant50k = 0; cant50k <= monto ~/ 50000; cant50k++) {
+        for (int cant20k = 0; cant20k <= monto ~/ 20000; cant20k++) {
+          int montoRestante = monto - (cant100k * 100000 + cant50k * 50000 + cant20k * 20000);
+          if (montoRestante < 0) continue;
+          if (montoRestante % 10000 != 0) continue;
+          int cant10k = montoRestante ~/ 10000;
+          int totalBilletesGrandes = cant100k + cant50k + cant20k;
+          // Preferir la combinación con menos billetes grandes (más pequeños)
+          if (cant100k * 100000 + cant50k * 50000 + cant20k * 20000 + cant10k * 10000 == monto) {
+            if (totalBilletesGrandes < menorCantidadBilletesGrandes) {
+              menorCantidadBilletesGrandes = totalBilletesGrandes;
+              mejorCombinacion = {
+                if (cant100k > 0) 100000: cant100k,
+                if (cant50k > 0) 50000: cant50k,
+                if (cant20k > 0) 20000: cant20k,
+                if (cant10k > 0) 10000: cant10k,
+              };
+            }
+          }
+        }
       }
     }
-    
-    // Si queda monto restante, no se puede entregar
-    if (montoRestante > 0) {
-      return {}; // Retornar vacío indica que no es posible
-    }
-    
-    return billetes;
+    return mejorCombinacion ?? {};
   }
 
   /// Verifica si un monto puede ser entregado con las denominaciones disponibles
