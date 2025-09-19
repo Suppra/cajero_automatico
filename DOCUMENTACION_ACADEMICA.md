@@ -154,57 +154,58 @@ Desarrollar un sistema de cajero automático funcional que demuestre la aplicaci
 
 ## METODOLOGÍA DEL ACARREO
 
-### ¿Qué es el acarreo?
-El acarreo es el método que usa el cajero para decidir cuántos billetes de cada denominación entregar al usuario, de forma que el monto solicitado se entregue exactamente y de manera eficiente.
+### ¿Qué es el acarreo y cómo funciona ahora?
+El acarreo es el método que usa el cajero para decidir cuántos billetes de cada denominación entregar al usuario, de forma que el monto solicitado se entregue exactamente y de manera eficiente, siguiendo la lógica de matriz progresiva como en la pizarra y el algoritmo Python.
 
-### ¿Cómo funciona el algoritmo en tu proyecto?
-El sistema usa una lista única de denominaciones permitidas, definida en el modelo del cajero:
+### Algoritmo paso a paso (matriz progresiva)
+1. Se valida que el monto sea múltiplo del menor billete permitido.
+2. Se genera una matriz dinámica (growable) que representa los intentos de sumar billetes para llegar al monto exacto.
+3. En cada fila, se prueba sumar billetes desde los más pequeños hacia los más grandes, marcando con `1` si se usa ese billete.
+4. Cuando la suma alcanza el monto solicitado, se detiene el proceso.
+5. Se cuenta cuántos billetes de cada denominación se usaron en la matriz.
+6. Si no se puede formar el monto, retorna error.
 
-```dart
-static const List<int> denominacionesPermitidas = [10000, 20000, 50000, 100000];
-```
-
-El método principal está en `CalculadorBilletes` y se llama así:
-
-```dart
-final billetesCalculados = CalculadorBilletes.calcularBilletes(monto, denominacionesPermitidas);
-```
-
-### Algoritmo paso a paso (Greedy)
-1. Ordena las denominaciones de mayor a menor.
-2. Para cada denominación, calcula cuántos billetes de ese tipo caben en el monto restante.
-3. Resta el valor de esos billetes al monto restante.
-4. Repite hasta que el monto restante sea 0.
-5. Si el monto no se puede formar exactamente, retorna error.
-
-#### Pseudocódigo
+#### Pseudocódigo actualizado
 ```pseudo
 entrada: monto, denominaciones[]
-ordenar denominaciones de mayor a menor
-resultado = mapa vacío
-restante = monto
-para cada denominacion en denominaciones:
-    cantidad = restante // denominacion
-    resultado[denominacion] = cantidad
-    restante = restante % denominacion
-si restante != 0:
-    retornar error (no se puede entregar el monto)
+validar monto
+inicializar matriz vacía
+suma = 0
+alcanzado = false
+totalRows = 0
+mientras no alcanzado:
+  fila = [0, 0, ..., 0] (growable)
+  sumaTemporal = suma
+  para j desde totalRows hasta denominaciones.length:
+    si sumaTemporal + denominaciones[j] <= monto:
+      fila.add(1)
+      sumaTemporal += denominaciones[j]
+      si sumaTemporal == monto:
+        alcanzado = true
+        suma = sumaTemporal
+        break
+    sino:
+      fila.add(0)
+  suma = sumaTemporal
+  matriz.add(fila)
+  ... (lógica de avance de filas)
+contar billetes por denominación en la matriz
 retornar resultado
 ```
 
-#### Diagrama de flujo
+#### Ejemplo práctico
+Supón que el usuario pide $50,000:
+1. El algoritmo prueba sumar billetes de $20,000 y $10,000 primero.
+2. Encuentra que 2×$20,000 + 1×$10,000 = $50,000.
+3. Resultado: {10000: 1, 20000: 2, 50000: 0, 100000: 0}
 
-Monto solicitado → Validar monto → Calcular billetes (greedy) → ¿Monto exacto? → [Sí] Entregar billetes / [No] Mostrar error
+Para $80,000:
+1. 4×$20,000 = $80,000.
+2. Resultado: {10000: 0, 20000: 4, 50000: 0, 100000: 0}
 
-### Ejemplo práctico
-Supón que el usuario pide $180,000:
-
-1. Ordena: [100,000, 50,000, 20,000, 10,000]
-2. $180,000 ÷ $100,000 = 1 billete → restante: $80,000
-3. $80,000 ÷ $50,000 = 1 billete → restante: $30,000
-4. $30,000 ÷ $20,000 = 1 billete → restante: $10,000
-5. $10,000 ÷ $10,000 = 1 billete → restante: $0
-6. Resultado: {100000: 1, 50000: 1, 20000: 1, 10000: 1}
+Para $180,000:
+1. 1×$100,000 + 1×$50,000 + 1×$20,000 + 1×$10,000 = $180,000.
+2. Resultado: {10000: 1, 20000: 1, 50000: 1, 100000: 1}
 
 ### Integración con el modelo y el flujo
 - El cajero llama a `CalculadorBilletes.calcularBilletes(monto, denominacionesPermitidas)` cada vez que el usuario solicita un retiro.
@@ -212,19 +213,17 @@ Supón que el usuario pide $180,000:
 - Si todo está bien, actualiza el inventario y registra la transacción.
 - Si no se puede entregar el monto exacto, muestra un mensaje de error y cancela el proceso.
 
-### Ventajas del método greedy
-- Es rápido y eficiente (complejidad O(n)).
-- Siempre entrega la menor cantidad de billetes grandes posible.
-- Se adapta automáticamente si cambian las denominaciones.
-
-### Reglas universales
-- El monto debe poder formarse exactamente con las denominaciones permitidas.
-- No se valida por múltiplos fijos, sino por la posibilidad real de entregar el monto.
+### Ventajas del método matriz progresiva
+- Replica exactamente la lógica de la pizarra y el algoritmo Python.
+- Prioriza billetes pequeños y genera combinaciones reales como en la clase.
+- El código es flexible y fácil de estudiar para estudiantes.
 
 ### Consejos para estudiantes
-- El algoritmo greedy es óptimo para este tipo de problema porque las denominaciones son múltiplos entre sí.
-- Si agregas una denominación que no es múltiplo, el algoritmo puede dejar de ser óptimo.
-- El código está desacoplado: si cambias las denominaciones en el modelo, todo el sistema se adapta automáticamente.
+- Analiza la matriz generada para entender cómo se suman los billetes.
+- Puedes modificar las denominaciones en el modelo y el algoritmo se adapta automáticamente.
+- Si tienes dudas, revisa el ejemplo Python y la pizarra para comparar resultados.
+
+---
 
 ---
 
