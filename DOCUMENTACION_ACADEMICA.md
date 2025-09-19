@@ -154,6 +154,103 @@ Desarrollar un sistema de cajero automático funcional que demuestre la aplicaci
 
 ## METODOLOGÍA DEL ACARREO
 
+### Explicación paso a paso del método de acarreo
+
+#### 1. Validación del Monto
+El método `montoValido` verifica que el monto a retirar sea positivo y múltiplo del billete más pequeño disponible. Esto asegura que el monto se puede entregar con los billetes disponibles.
+
+```dart
+static bool montoValido(int monto, List<int> denominaciones) {
+  if (monto <= 0) return false;
+  final menor = denominaciones.reduce((a, b) => a < b ? a : b);
+  return monto % menor == 0;
+}
+```
+
+#### 2. Preparación de Denominaciones
+Las denominaciones se ordenan de menor a mayor para que el algoritmo empiece probando con los billetes pequeños.
+
+```dart
+denominaciones = List.from(denominaciones)..sort(); // menor a mayor
+```
+
+#### 3. Construcción de la Matriz de Acarreo
+Se construye una matriz donde cada fila representa una posible combinación de billetes para sumar el monto.
+
+- Empieza con una suma de cero.
+- En cada fila, intenta agregar billetes desde la posición `totalRows` en adelante.
+- Si puede sumar un billete sin pasarse del monto, pone un `1` en la fila y suma el valor.
+- Si no puede, pone un `0`.
+- Cuando la suma temporal alcanza el monto, termina el ciclo.
+- El control de `totalRows` permite ir probando diferentes combinaciones.
+
+```dart
+List<List<int>> matriz = [];
+int suma = 0;
+bool alcanzado = false;
+int totalRows = 0;
+while (!alcanzado) {
+  List<int> fila = List.generate(totalRows, (_) => 0, growable: true);
+  bool sePudoSumar = false;
+  int sumaTemporal = suma;
+  for (int j = totalRows; j < denominaciones.length; j++) {
+    if (sumaTemporal + denominaciones[j] <= monto) {
+      fila.add(1);
+      sumaTemporal += denominaciones[j];
+      sePudoSumar = true;
+      if (sumaTemporal == monto) {
+        alcanzado = true;
+        suma = sumaTemporal;
+        break;
+      }
+    } else {
+      fila.add(0);
+    }
+  }
+  suma = sumaTemporal;
+  matriz.add(fila);
+  if (!sePudoSumar && fila.sublist(totalRows).every((v) => v == 0)) {
+    if (fila.sublist(totalRows).any((v) => v == 1)) {
+      totalRows += 1;
+    } else {
+      totalRows = 0;
+    }
+  } else {
+    totalRows += 1;
+  }
+}
+```
+
+#### 4. Construcción del Resultado
+Se recorre la matriz y se cuenta cuántos billetes de cada denominación se usaron. Así se obtiene un mapa con la cantidad de billetes de cada tipo que se deben entregar.
+
+```dart
+Map<int, int> resultado = {for (var d in denominaciones) d: 0};
+for (var fila in matriz) {
+  for (int j = 0; j < fila.length; j++) {
+    if (fila[j] == 1 && j < denominaciones.length) {
+      resultado[denominaciones[j]] = resultado[denominaciones[j]]! + 1;
+    }
+  }
+}
+```
+
+#### 5. Retorno del Resultado
+Se devuelve el mapa con la cantidad de billetes por denominación.
+
+```dart
+return resultado;
+```
+
+#### Resumen Visual
+1. **Validar monto** → ¿Es posible entregar el monto?
+2. **Ordenar billetes** → De menor a mayor.
+3. **Construir matriz** → Probar combinaciones sumando billetes.
+4. **Contar billetes** → Sumar cuántos de cada tipo se usaron.
+5. **Devolver resultado** → Mapa con la cantidad de cada billete.
+
+Esta explicación te ayudará a entender cómo funciona el método de acarreo en el cajero automático y cómo se calcula la entrega óptima de billetes.
+
 ### ¿Qué es el acarreo y cómo funciona ahora?
 El acarreo es el método que usa el cajero para decidir cuántos billetes de cada denominación entregar al usuario, de forma que el monto solicitado se entregue exactamente y de manera eficiente, siguiendo la lógica de matriz progresiva como en la pizarra y el algoritmo Python.
 
