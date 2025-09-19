@@ -154,76 +154,79 @@ Desarrollar un sistema de cajero automático funcional que demuestre la aplicaci
 
 ## METODOLOGÍA DEL ACARREO
 
-### Concepto Teórico
-La **metodología del acarreo** es un algoritmo optimizado para **calcular la combinación de billetes** que entrega el monto solicitado, priorizando el uso de billetes pequeños cuando existen varias combinaciones posibles.
+### ¿Qué es el acarreo?
+El acarreo es el método que usa el cajero para decidir cuántos billetes de cada denominación entregar al usuario, de forma que el monto solicitado se entregue exactamente y de manera eficiente.
 
-### Principio Matemático
-```
-Algoritmo de acarreo modificado:
-1. Generar todas las combinaciones posibles de billetes para el monto solicitado.
-2. Seleccionar la combinación que utilice la menor cantidad de billetes grandes (priorizando billetes pequeños).
-3. Si hay varias combinaciones equivalentes, se escoge la que maximiza el uso de billetes pequeños.
-```
+### ¿Cómo funciona el algoritmo en tu proyecto?
+El sistema usa una lista única de denominaciones permitidas, definida en el modelo del cajero:
 
-### Implementación en Código
 ```dart
-class CalculadorBilletes {
-  /// Calcula los billetes necesarios para un monto usando el algoritmo del acarreo modificado
-  static Map<int, int> calcularBilletes(int monto) {
-    if (monto <= 0) return {};
-    Map<int, int>? mejorCombinacion;
-    int menorCantidadBilletesGrandes = double.maxFinite.toInt();
-    // Generar todas las combinaciones posibles de billetes
-    for (int cant100k = 0; cant100k <= monto ~/ 100000; cant100k++) {
-      for (int cant50k = 0; cant50k <= monto ~/ 50000; cant50k++) {
-        for (int cant20k = 0; cant20k <= monto ~/ 20000; cant20k++) {
-          int montoRestante = monto - (cant100k * 100000 + cant50k * 50000 + cant20k * 20000);
-          if (montoRestante < 0) continue;
-          if (montoRestante % 10000 != 0) continue;
-          int cant10k = montoRestante ~/ 10000;
-          int totalBilletesGrandes = cant100k + cant50k + cant20k;
-          // Preferir la combinación con menos billetes grandes (más pequeños)
-          if (cant100k * 100000 + cant50k * 50000 + cant20k * 20000 + cant10k * 10000 == monto) {
-            if (totalBilletesGrandes < menorCantidadBilletesGrandes) {
-              menorCantidadBilletesGrandes = totalBilletesGrandes;
-              mejorCombinacion = {
-                if (cant100k > 0) 100000: cant100k,
-                if (cant50k > 0) 50000: cant50k,
-                if (cant20k > 0) 20000: cant20k,
-                if (cant10k > 0) 10000: cant10k,
-              };
-            }
-          }
-        }
-      }
-    }
-    return mejorCombinacion ?? {};
-  }
-}
+static const List<int> denominacionesPermitidas = [10000, 20000, 50000, 100000];
 ```
 
-### Ejemplo Práctico
-**Monto a retirar: $40,000**
+El método principal está en `CalculadorBilletes` y se llama así:
 
-```
-Combinaciones posibles:
-1. 2×$20,000 = $40,000 (2 billetes grandes)
-2. 1×$20,000 + 2×$10,000 = $40,000 (1 billete grande, 2 pequeños)
-
-El sistema selecciona la segunda opción: 1×$20,000 + 2×$10,000
+```dart
+final billetesCalculados = CalculadorBilletes.calcularBilletes(monto, denominacionesPermitidas);
 ```
 
-### Nueva Regla de Validación de Montos
+### Algoritmo paso a paso (Greedy)
+1. Ordena las denominaciones de mayor a menor.
+2. Para cada denominación, calcula cuántos billetes de ese tipo caben en el monto restante.
+3. Resta el valor de esos billetes al monto restante.
+4. Repite hasta que el monto restante sea 0.
+5. Si el monto no se puede formar exactamente, retorna error.
 
-**El monto a retirar es válido si y solo si se puede formar exactamente con billetes de $10,000, $20,000, $50,000, $100,000 (sin usar billetes de $5,000).**
+#### Pseudocódigo
+```pseudo
+entrada: monto, denominaciones[]
+ordenar denominaciones de mayor a menor
+resultado = mapa vacío
+restante = monto
+para cada denominacion en denominaciones:
+    cantidad = restante // denominacion
+    resultado[denominacion] = cantidad
+    restante = restante % denominacion
+si restante != 0:
+    retornar error (no se puede entregar el monto)
+retornar resultado
+```
 
-- Ejemplo válido: $220,000 → 2×$100,000 + 1×$20,000
-- Ejemplo inválido: $145,000 → No se puede formar con las denominaciones disponibles
+#### Diagrama de flujo
 
-**No se valida por múltiplos fijos por tipo de retiro.**
-La validación es universal para los tres tipos de retiro.
+Monto solicitado → Validar monto → Calcular billetes (greedy) → ¿Monto exacto? → [Sí] Entregar billetes / [No] Mostrar error
 
-**Si el monto no se puede formar exactamente, el sistema cancela el proceso y regresa al inicio.**
+### Ejemplo práctico
+Supón que el usuario pide $180,000:
+
+1. Ordena: [100,000, 50,000, 20,000, 10,000]
+2. $180,000 ÷ $100,000 = 1 billete → restante: $80,000
+3. $80,000 ÷ $50,000 = 1 billete → restante: $30,000
+4. $30,000 ÷ $20,000 = 1 billete → restante: $10,000
+5. $10,000 ÷ $10,000 = 1 billete → restante: $0
+6. Resultado: {100000: 1, 50000: 1, 20000: 1, 10000: 1}
+
+### Integración con el modelo y el flujo
+- El cajero llama a `CalculadorBilletes.calcularBilletes(monto, denominacionesPermitidas)` cada vez que el usuario solicita un retiro.
+- Si el resultado es válido, verifica que haya suficientes billetes en el inventario.
+- Si todo está bien, actualiza el inventario y registra la transacción.
+- Si no se puede entregar el monto exacto, muestra un mensaje de error y cancela el proceso.
+
+### Ventajas del método greedy
+- Es rápido y eficiente (complejidad O(n)).
+- Siempre entrega la menor cantidad de billetes grandes posible.
+- Se adapta automáticamente si cambian las denominaciones.
+
+### Reglas universales
+- El monto debe poder formarse exactamente con las denominaciones permitidas.
+- No se valida por múltiplos fijos, sino por la posibilidad real de entregar el monto.
+
+### Consejos para estudiantes
+- El algoritmo greedy es óptimo para este tipo de problema porque las denominaciones son múltiplos entre sí.
+- Si agregas una denominación que no es múltiplo, el algoritmo puede dejar de ser óptimo.
+- El código está desacoplado: si cambias las denominaciones en el modelo, todo el sistema se adapta automáticamente.
+
+---
 
 ---
 
@@ -1056,3 +1059,63 @@ El código resultante es **mantenible, escalable y bien documentado**, caracter�
 **Fin de la Documentación Académica**
 *Universidad Popular del César - Sistemas de Información Empresarial*
 *Cajero Automático con Metodología del Acarreo - Proyecto Flutter + Firebase*
+### Explicación paso a paso del nuevo algoritmo de acarreo (2025)
+
+#### ¿Qué es el acarreo?
+El acarreo es una técnica para calcular cómo entregar un monto exacto usando billetes de diferentes denominaciones, buscando la combinación más eficiente y que use preferentemente billetes pequeños si hay varias opciones.
+
+#### ¿Cómo funciona el código en Flutter?
+El código está en `lib/models/calculador_billetes.dart` y se compone de varios métodos. Aquí te explico cada uno:
+
+**1. Lista de billetes disponibles**
+```dart
+static const List<Map<String, dynamic>> billetes = [
+  {'billete': '10k', 'valor': 10000, 'img': '10k.png'},
+  {'billete': '20k', 'valor': 20000, 'img': '20k.png'},
+  {'billete': '50k', 'valor': 50000, 'img': '50k.png'},
+  {'billete': '100k', 'valor': 100000, 'img': '100k.png'},
+];
+```
+Esta lista define los billetes que el cajero puede entregar, con su nombre, valor y una imagen asociada.
+
+**2. Validación del monto**
+```dart
+static bool montoValido(int monto) {
+  return monto > 0 && monto % 10000 == 0;
+}
+```
+Solo se aceptan montos positivos y múltiplos de $10,000.
+
+**3. Generación de la matriz de acarreo**
+```dart
+static List<List<int>> mostrarMatriz(int cantidad) {...}
+```
+Este método crea una matriz que representa cómo se pueden sumar los billetes para llegar al monto solicitado. Cada fila es un intento de combinación, y los `1` indican que ese billete se usó en esa posición.
+
+**4. Cálculo de los billetes a entregar**
+```dart
+static List<Map<String, dynamic>> calcularBilletesAcarreo(List<List<int>> matriz) {...}
+```
+Recorre la matriz y arma una lista con los billetes que efectivamente se van a entregar.
+
+**5. Método principal: calcularBilletes**
+```dart
+static Map<int, int>? calcularBilletes(int monto) {...}
+```
+Este es el método que usa el cajero. Primero valida el monto, luego genera la matriz, y finalmente cuenta cuántos billetes de cada denominación se deben entregar. Devuelve un mapa con la cantidad de cada billete.
+
+#### Ejemplo paso a paso
+Supón que quieres retirar $180,000:
+1. Se valida que el monto sea múltiplo de $10,000.
+2. Se genera la matriz de combinaciones posibles.
+3. Se recorre la matriz y se arma la lista de billetes.
+4. Se cuenta cuántos billetes de cada tipo se entregan.
+5. El resultado puede ser, por ejemplo: `{100000: 1, 50000: 1, 20000: 1, 10000: 1}`.
+
+#### ¿Por qué es útil este algoritmo?
+Evita entregar montos imposibles y optimiza el uso de billetes, lo que ayuda a que el cajero no se quede sin billetes grandes o pequeños rápidamente. Además, es flexible y fácil de modificar si cambian las denominaciones.
+
+#### ¿Dónde se usa?
+El método `calcularBilletes` se llama desde el modelo del cajero (`cajero_model.dart`) cada vez que el usuario solicita un retiro. Si el monto no se puede entregar exactamente, el sistema muestra un mensaje de error.
+
+---

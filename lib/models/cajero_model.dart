@@ -1,3 +1,5 @@
+import 'calculador_billetes.dart';
+
 /// Modelo que representa el estado del cajero automático
 /// Maneja el inventario de billetes y las operaciones
 class CajeroAutomatico {
@@ -65,7 +67,8 @@ class CajeroAutomatico {
     }
 
     // Calcular billetes necesarios usando metodología del acarreo
-    final billetesCalculados = CalculadorBilletes.calcularBilletes(monto.toInt());
+    final billetesCalculados =
+        CalculadorBilletes.calcularBilletes(monto.toInt(), denominacionesPermitidas) ?? {};
 
     if (billetesCalculados.isEmpty) {
       return ResultadoVerificacion(
@@ -120,7 +123,8 @@ class CajeroAutomatico {
   int calcularRetirosRestantes(double monto) {
     if (!verificarRetiro(monto).posible) return 0;
 
-    final billetesNecesarios = CalculadorBilletes.calcularBilletes(monto.toInt());
+    final billetesNecesarios =
+        CalculadorBilletes.calcularBilletes(monto.toInt(), denominacionesPermitidas) ?? {};
     if (billetesNecesarios.isEmpty) return 0;
 
     int retirosMinimos = double.maxFinite.toInt();
@@ -214,52 +218,4 @@ class ResultadoVerificacion {
     this.codigoError,
     this.billetesNecesarios,
   });
-}
-
-/// Calculadora de billetes usando metodología del acarreo
-class CalculadorBilletes {
-  /// Calcula los billetes necesarios para un monto usando el algoritmo del acarreo
-  static Map<int, int> calcularBilletes(int monto) {
-    if (monto <= 0) return {};
-    // const denominaciones = [100000, 50000, 20000, 10000]; // No se usa
-    Map<int, int>? mejorCombinacion;
-    int menorCantidadBilletesGrandes = double.maxFinite.toInt();
-
-    // Generar todas las combinaciones posibles de billetes
-    for (int cant100k = 0; cant100k <= monto ~/ 100000; cant100k++) {
-      for (int cant50k = 0; cant50k <= monto ~/ 50000; cant50k++) {
-        for (int cant20k = 0; cant20k <= monto ~/ 20000; cant20k++) {
-          int montoRestante = monto - (cant100k * 100000 + cant50k * 50000 + cant20k * 20000);
-          if (montoRestante < 0) continue;
-          if (montoRestante % 10000 != 0) continue;
-          int cant10k = montoRestante ~/ 10000;
-          int totalBilletesGrandes = cant100k + cant50k + cant20k;
-          // Preferir la combinación con menos billetes grandes (más pequeños)
-          if (cant100k * 100000 + cant50k * 50000 + cant20k * 20000 + cant10k * 10000 == monto) {
-            if (totalBilletesGrandes < menorCantidadBilletesGrandes) {
-              menorCantidadBilletesGrandes = totalBilletesGrandes;
-              mejorCombinacion = {
-                if (cant100k > 0) 100000: cant100k,
-                if (cant50k > 0) 50000: cant50k,
-                if (cant20k > 0) 20000: cant20k,
-                if (cant10k > 0) 10000: cant10k,
-              };
-            }
-          }
-        }
-      }
-    }
-    return mejorCombinacion ?? {};
-  }
-
-  /// Verifica si un monto puede ser entregado con las denominaciones disponibles
-  static bool esPosibleEntregar(int monto) {
-    return calcularBilletes(monto).isNotEmpty;
-  }
-
-  /// Calcula el total de billetes para un monto dado
-  static int calcularTotalBilletes(int monto) {
-    final billetes = calcularBilletes(monto);
-    return billetes.values.fold(0, (sum, cantidad) => sum + cantidad);
-  }
 }
