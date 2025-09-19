@@ -1,4 +1,3 @@
-/// Calculador de billetes usando algoritmo de acarreo basado en el ejemplo en Python
 class CalculadorBilletes {
   static bool montoValido(int monto, List<int> denominaciones) {
     if (monto <= 0) return false;
@@ -11,14 +10,50 @@ class CalculadorBilletes {
     if (!montoValido(monto, denominaciones)) {
       return null;
     }
-    denominaciones = List.from(denominaciones)..sort((a, b) => b.compareTo(a)); // Orden descendente
-    Map<int, int> resultado = {for (var d in denominaciones) d: 0};
-    int restante = monto;
-    for (final d in denominaciones) {
-      resultado[d] = restante ~/ d;
-      restante = restante % d;
+    denominaciones = List.from(denominaciones)..sort(); // menor a mayor
+    List<List<int>> matriz = [];
+    int suma = 0;
+    bool alcanzado = false;
+    int totalRows = 0;
+    while (!alcanzado) {
+      List<int> fila = List.generate(totalRows, (_) => 0, growable: true);
+      bool sePudoSumar = false;
+      int sumaTemporal = suma;
+      for (int j = totalRows; j < denominaciones.length; j++) {
+        if (sumaTemporal + denominaciones[j] <= monto) {
+          fila.add(1);
+          sumaTemporal += denominaciones[j];
+          sePudoSumar = true;
+          if (sumaTemporal == monto) {
+            alcanzado = true;
+            suma = sumaTemporal;
+            break;
+          }
+        } else {
+          fila.add(0);
+        }
+      }
+      suma = sumaTemporal;
+      matriz.add(fila);
+      if (!sePudoSumar && fila.sublist(totalRows).every((v) => v == 0)) {
+        if (fila.sublist(totalRows).any((v) => v == 1)) {
+          totalRows += 1;
+        } else {
+          totalRows = 0;
+        }
+      } else {
+        totalRows += 1;
+      }
     }
-    if (restante != 0) return null;
+    if (matriz.isEmpty) return null;
+    Map<int, int> resultado = {for (var d in denominaciones) d: 0};
+    for (var fila in matriz) {
+      for (int j = 0; j < fila.length; j++) {
+        if (fila[j] == 1 && j < denominaciones.length) {
+          resultado[denominaciones[j]] = resultado[denominaciones[j]]! + 1;
+        }
+      }
+    }
     return resultado;
   }
 }
